@@ -10,10 +10,12 @@ class Tailer(object):
 
     def __init__(self, file, read_size=1024, end=False):
         self.read_size = read_size
-        self.file = file
+        self.file = open(file)
+        self.filename   =   file  
         self.start_pos = self.file.tell()
         if end:
             self.seek_end()
+        self.exit   =   0
     
     def splitlines(self, data):
         return re.split('|'.join(self.line_terminators), data)
@@ -152,9 +154,9 @@ class Tailer(object):
 
         Based on: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/157035
         """
-        trailing = True       
+        trailing = True
         
-        while 1:
+        while self.exit == 0:
             where = self.file.tell()
             line = self.file.readline()
             if line:    
@@ -176,12 +178,44 @@ class Tailer(object):
                 trailing = True
                 self.seek(where)
                 time.sleep(delay)
+                
+        #Fermeture du fichierde log 
+        self.close()
 
     def __iter__(self):
         return self.follow()
 
     def close(self):
         self.file.close()
+        
+        
+        
+    """
+    Arrete le suivi du fichier tail -f
+    et ferme le curseur sur le fichier de log
+    """
+    def stop_follow(self):
+        
+        #Stop la boucle infinie
+        self.exit = 1
+        time.sleep(1.0)
+        
+        #Ferme le fichier
+        self.close()
+       
+    """
+    Redemare le suivi du fichier de log
+    """
+    def start_follow(self,file=None):
+        
+        if file != None:
+            
+            self.filename   =   file
+            
+        self.__init__( self.filename, self.read_size,True )
+        self.follow()
+         
+    
 
 def tail(file, lines=10):
     """\
